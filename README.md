@@ -6,7 +6,7 @@ Bienvenido a la página de agenda telefonica. Aquí podrás acceder y gestionar 
 
 Puedes acceder a la página de notas a través del siguiente enlace:
 
-//
+https://agenda-telefonica-web.onrender.com
 
 Acceder a la Página de Agenda Telefonica
 
@@ -34,4 +34,4 @@ Si deseas clonar este proyecto y ejecutarlo localmente, sigue estos pasos:
 
 1. Clona el repositorio:
    ```bash
-   git clone //
+   git clone https://github.com/dnjoc/agenda_telefonica_web.git
