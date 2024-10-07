@@ -7,6 +7,16 @@ require('dotenv').config()
 
 const Person = require('./models/person')
 
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } 
+
+  next(error)
+}
+
 app.use(cors())
 //agregamos el middleware integrado de Express llamado static
 app.use(express.static('dist'))
@@ -51,7 +61,9 @@ app.use(morgan((tokens, req, res) => {
 morgan.token('body', (req) => JSON.stringify(req.body))
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
 //genera id`s buscando el numero maximo de registros y sumandole 1
 // const generateId = () => {
 //     const maxId = persons.length > 0
@@ -60,13 +72,13 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms :b
 //     return maxId + 1
 //   }
 //Este codigo genera un id random, busca que no concuerde con ningun id existente
-const generateId = () => {
-  let newId
-  do {
-    newId = Math.floor(Math.random() * 1000000)
-  } while (persons.some(person => person.id === newId))
-  return newId
-}
+// const generateId = () => {
+//   let newId
+//   do {
+//     newId = Math.floor(Math.random() * 1000000)
+//   } while (persons.some(person => person.id === newId))
+//   return newId
+// }
 app.get('/', (request, response) => {
   response.send('<h1>Backend Agenda Telefonica</h1>')
 })
@@ -91,18 +103,39 @@ app.get('/info', (request, response) => {
   // response.send(info)
 })
 
-app.get('/api/persons/:id', (request, response) => {
+// app.get('/api/persons/:id', (request, response) => {
+//   const id = Number(request.params.id)
+//   const person = persons.find(person => person.id === id)
+//   if (person) {
+//     response.json(person)
+//   } else {
+//     response.status(404).json({
+//       error: 'Person not found'
+//     }).end()
+//   }
+// })
 
-  const id = Number(request.params.id)
-  const person = persons.find(person => person.id === id)
-  if (person) {
-    response.json(person)
-  } else {
-    response.status(404).json({
-      error: 'Person not found'
-    }).end()
-  }
+//buscar persona por ID con mongoose
+app.get('/api/persons/:id', (request, response, next) => {
+  console.log(request.params.id)
+  const id = request.params.id
+
+  // if (!mongoose.Types.ObjectId.isValid(id)) {
+  //   return response.status(400).json({ error: 'malformatted id' })
+  // }
+//const objectId = mongoose.Types.ObjectId(id)
+
+Person.findById(id)
+  .then(person => {
+    if (person) {
+      response.json(person)
+    } else {
+      response.status(404).end()
+    }
+  })
+  .catch(error => next(error))
 })
+
 //convierte la primera letra de cada palabra en Mayuscula
 const capitalizeName = (name) => {
   return name.split(' ')
@@ -111,7 +144,6 @@ const capitalizeName = (name) => {
 }
 app.post('/api/persons', (request, response) => {
   const body = request.body
-
   if (!body.name || !body.number) {
     let msg
     //mensaje especifico al dato faltante
@@ -125,12 +157,20 @@ app.post('/api/persons', (request, response) => {
     })
   }
   //Se busca si existe el nombre para indicar que no puede ser agregado
-  const existeNombre = persons.some(person => person.name.toLowerCase() === body.name.toLowerCase())
-  if (existeNombre) {
-    return response.status(400).json({
-      error: 'name must be unique'
-    })
-  }
+  //  const existeNombre = person.some(person => person.name.toLowerCase() === body.name.toLowerCase())
+  //  if (existeNombre) {
+  //   return response.status(400).json({
+  //      error: 'name must be unique'
+  //  })
+  //  }
+  // Person.find({ name: capitalizeName(body.name) })
+  //   .then(existeNombre => {
+  //     if (existeNombre) {
+  //       return response.status(400).json({
+  //         error: 'name must be unique'
+  //       })
+  //     }
+
   const person = new Person({
     //id: generateId(),
     name: capitalizeName(body.name),
@@ -144,6 +184,11 @@ app.post('/api/persons', (request, response) => {
   })
   //response.json(person)
 })
+// .catch(error => {
+//   console.error('Error:', error.message)
+//   response.status(500).json({ error: 'An error occurred while adding the person' })
+// })
+// })
 // app.delete('/api/persons/:id', (request, response) => {
 //   const id = Number(request.params.id)
 //   persons = Person.filter(person => person.id !== id)
@@ -151,13 +196,39 @@ app.post('/api/persons', (request, response) => {
 //   //response.status(200).json({ message: 'Person deleted successfully' })
 // })
 
+//Actualizar numero de telefono con mongosse
+app.put('/api/persons/:id', (request, response) => {
+  const id = request.params.id
+  const body = request.body
+
+  if (!body.number) {
+    return response.status(400).json({ error: 'number missing' })
+  }
+
+  const updatedPerson = {
+    number: body.number
+  }
+
+  Person.findByIdAndUpdate(id, updatedPerson, { new: true, runValidators: true, context: 'query' })
+    .then(updatedPerson => {
+      if (updatedPerson) {
+        response.json(updatedPerson)
+      } else {
+        response.status(404).json({ error: 'Person not found' })
+      }
+    })
+    .catch(error => {
+      console.error('Error updating person:', error.message)
+      response.status(500).json({ error: 'An error occurred while updating the person' })
+    })
+})
+
 //eliminar registro por id en mongoose
 app.delete('/api/persons/:id', (request, response) => {
   const id = request.params.id
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return response.status(400).json({ error: 'Invalid ID format' })
   }
-
   Person.findByIdAndDelete(id)
     .then(result => {
       if (result) {
@@ -172,9 +243,8 @@ app.delete('/api/persons/:id', (request, response) => {
     })
 })
 
-
-
-
+app.use(unknownEndpoint) 
+  app.use(errorHandler)
 //const PORT = process.env.PORT || 3001
 const PORT = process.env.PORT
 app.listen(PORT, () => {
