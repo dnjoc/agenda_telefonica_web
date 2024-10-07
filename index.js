@@ -12,7 +12,7 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
-  } 
+  }
 
   next(error)
 }
@@ -123,17 +123,17 @@ app.get('/api/persons/:id', (request, response, next) => {
   // if (!mongoose.Types.ObjectId.isValid(id)) {
   //   return response.status(400).json({ error: 'malformatted id' })
   // }
-//const objectId = mongoose.Types.ObjectId(id)
+  //const objectId = mongoose.Types.ObjectId(id)
 
-Person.findById(id)
-  .then(person => {
-    if (person) {
-      response.json(person)
-    } else {
-      response.status(404).end()
-    }
-  })
-  .catch(error => next(error))
+  Person.findById(id)
+    .then(person => {
+      if (person) {
+        response.json(person)
+      } else {
+        response.status(404).end()
+      }
+    })
+    .catch(error => next(error))
 })
 
 //convierte la primera letra de cada palabra en Mayuscula
@@ -204,7 +204,6 @@ app.put('/api/persons/:id', (request, response) => {
   if (!body.number) {
     return response.status(400).json({ error: 'number missing' })
   }
-
   const updatedPerson = {
     number: body.number
   }
@@ -243,8 +242,8 @@ app.delete('/api/persons/:id', (request, response) => {
     })
 })
 
-app.use(unknownEndpoint) 
-  app.use(errorHandler)
+app.use(unknownEndpoint)
+app.use(errorHandler)
 //const PORT = process.env.PORT || 3001
 const PORT = process.env.PORT
 app.listen(PORT, () => {
