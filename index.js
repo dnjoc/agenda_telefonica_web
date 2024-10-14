@@ -8,12 +8,20 @@ require('dotenv').config()
 const Person = require('./models/person')
 
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message)
+  console.error("mensaje error", error.message)
+  console.log("error. errors", error.errors)
+
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    if (error.errors.name && error.errors.name.kind === 'minlength') {
+      return response.status(400).json({ error: 'Name must be at least 3 characters long' });
+    }if (error.errors && error.errors.number) {
+      return response.status(400).json({ error: 'Invalid phone number format. Must be in the format XX-XXXXXXX or XXX-XXXXXXXX' })
+    }
+    return response.status(400).json({ error: error.message })
   }
-
   next(error)
 }
 
@@ -142,7 +150,8 @@ const capitalizeName = (name) => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
 }
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
+//app.post('/api/persons', (request, response) => {
   const body = request.body
   if (!body.name || !body.number) {
     let msg
@@ -170,7 +179,12 @@ app.post('/api/persons', (request, response) => {
   //         error: 'name must be unique'
   //       })
   //     }
-
+// Validar el formato del número de teléfono
+ const phoneRegex = /^\d{2,3}-\d{5,}$/
+  if (!phoneRegex.test(body.number)) {
+   let phone = "Invalid phone number format"
+   return response.status(400).json({ error: phone })
+ }
   const person = new Person({
     //id: generateId(),
     name: capitalizeName(body.name),
@@ -182,12 +196,13 @@ app.post('/api/persons', (request, response) => {
   person.save().then(savePerson => {
     response.json(savePerson)
   })
+  .catch(error => next(error))
   //response.json(person)
 })
 // .catch(error => {
 //   console.error('Error:', error.message)
 //   response.status(500).json({ error: 'An error occurred while adding the person' })
-// })
+//})
 // })
 // app.delete('/api/persons/:id', (request, response) => {
 //   const id = Number(request.params.id)
