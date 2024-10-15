@@ -8,16 +8,16 @@ require('dotenv').config()
 const Person = require('./models/person')
 
 const errorHandler = (error, request, response, next) => {
-  console.error("mensaje error", error.message)
-  console.log("error. errors", error.errors)
+  console.error('mensaje error', error.message)
+  console.log('error. errors', error.errors)
 
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
   } else if (error.name === 'ValidationError') {
     if (error.errors.name && error.errors.name.kind === 'minlength') {
-      return response.status(400).json({ error: 'Name must be at least 3 characters long' });
-    }if (error.errors && error.errors.number) {
+      return response.status(400).json({ error: 'Name must be at least 3 characters long' })
+    } if (error.errors && error.errors.number) {
       return response.status(400).json({ error: 'Invalid phone number format. Must be in the format XX-XXXXXXX or XXX-XXXXXXXX' })
     }
     return response.status(400).json({ error: error.message })
@@ -29,43 +29,45 @@ app.use(cors())
 //agregamos el middleware integrado de Express llamado static
 app.use(express.static('dist'))
 
-let persons = [
-  {
-    "id": 1,
-    "name": "Arto Hellas",
-    "number": "040-123456"
-  },
-  {
-    "id": 2,
-    "name": "Ada Lovelace",
-    "number": "39-44-5323523"
-  },
-  {
-    "id": 3,
-    "name": "Dan Abramov",
-    "number": "12-43-234345"
-  },
-  {
-    "id": 4,
-    "name": "Mary Poppendieck",
-    "number": "39-23-6423122"
-  }
-]
+// let persons = [
+//   {
+//     "id": 1,
+//     "name": "Arto Hellas",
+//     "number": "040-123456"
+//   },
+//   {
+//     "id": 2,
+//     "name": "Ada Lovelace",
+//     "number": "39-44-5323523"
+//   },
+//   {
+//     "id": 3,
+//     "name": "Dan Abramov",
+//     "number": "12-43-234345"
+//   },
+//   {
+//     "id": 4,
+//     "name": "Mary Poppendieck",
+//     "number": "39-23-6423122"
+//   }
+// ]
 // Middleware
 app.use(express.json())
 app.use(morgan('tiny'))
 
 // API endpoints
 app.use(morgan((tokens, req, res) => {
-  return
-  tokens.method(req, res),
+  return [
+    tokens.method(req, res),
     tokens.url(req, res),
     tokens.status(req, res),
-    tokens.res(req, res, 'content-length'), '-',
-    tokens['response-time', 'ms',
-      JSON.stringify(req.body)
-    ].join(' ')
+    tokens.res(req, res, 'content-length'),
+    '-',
+    tokens['response-time'](req, res), 'ms',
+    JSON.stringify(req.body)
+  ].join(' ')
 }))
+
 morgan.token('body', (req) => JSON.stringify(req.body))
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
@@ -90,20 +92,17 @@ const unknownEndpoint = (request, response) => {
 app.get('/', (request, response) => {
   response.send('<h1>Backend Agenda Telefonica</h1>')
 })
-
 // app.get('/api/persons', (request, response) => {
 //   response.json(persons)
 // })
-
-//configuracion get para consulta en mongodb 
+//configuracion get para consulta en mongodb
 app.get('/api/persons', (request, response) => {
   Person.find({}).then(persons => {
     response.json(persons)
   })
 })
-
 app.get('/info', (request, response) => {
-  response.send(`<p>Phonebook has info for ${persons.length} people</p><p>${new Date()}</p>`)
+  response.send(`<p>Phonebook has info for ${Person.length} people</p><p>${new Date()}</p>`)
   //   const info = `
   //   <p>Phonebook has info for ${persons.length} people</p>
   //   <p>${new Date()}</p>
@@ -151,15 +150,15 @@ const capitalizeName = (name) => {
     .join(' ')
 }
 app.post('/api/persons', (request, response, next) => {
-//app.post('/api/persons', (request, response) => {
+  //app.post('/api/persons', (request, response) => {
   const body = request.body
   if (!body.name || !body.number) {
     let msg
     //mensaje especifico al dato faltante
     if (!body.name) {
-      msg = "name missing"
+      msg = 'name missing'
     } else {
-      msg = "number missing"
+      msg = 'number missing'
     }
     return response.status(400).json({
       error: msg
@@ -179,12 +178,12 @@ app.post('/api/persons', (request, response, next) => {
   //         error: 'name must be unique'
   //       })
   //     }
-// Validar el formato del número de teléfono
- const phoneRegex = /^\d{2,3}-\d{5,}$/
+  // Validar el formato del número de teléfono
+  const phoneRegex = /^\d{2,3}-\d{5,}$/
   if (!phoneRegex.test(body.number)) {
-   let phone = "Invalid phone number format"
-   return response.status(400).json({ error: phone })
- }
+    let phone = 'Invalid phone number format'
+    return response.status(400).json({ error: phone })
+  }
   const person = new Person({
     //id: generateId(),
     name: capitalizeName(body.name),
@@ -196,7 +195,7 @@ app.post('/api/persons', (request, response, next) => {
   person.save().then(savePerson => {
     response.json(savePerson)
   })
-  .catch(error => next(error))
+    .catch(error => next(error))
   //response.json(person)
 })
 // .catch(error => {

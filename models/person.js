@@ -8,6 +8,7 @@ console.log('connecting to', url)
 
 mongoose.connect(url)
   .then(result => {
+    console.log(result)
     console.log('connected to MongoDB')
   })
   .catch(error => {
@@ -23,8 +24,8 @@ const phoneSchema = new mongoose.Schema({
     type: String,
     required: true,
     validate: {
-      validator: function(v) {
-        return /\d{2,3}-\d{5,}/.test(v); // Expresión regular para validar el número de teléfono
+      validator: function (v) {
+        return /\d{2,3}-\d{5,}/.test(v) // Expresión regular para validar el número de teléfono
       },
       message: props => `${props.value} no es un número de teléfono válido!`
     }
